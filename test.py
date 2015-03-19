@@ -4,15 +4,13 @@ import serial
 import qrcode
 from StringIO import StringIO
 import sys
-from argparse import ArgumentParser
+import urlparse
 
 #SOH = "\x0H"
 STX = "\x02"
 CR  = "\x0D"
 ESC = "\x1B"
 
-#ID = "135792468228"
-ID =  "000000000001"
 
 # 191100001800020OpenLab Augsburg
 #  |||||||||||||||_ text
@@ -23,75 +21,124 @@ ID =  "000000000001"
 #  |_ font
 
 
-kk = serial.Serial(
-        bytesize=8,
-        baudrate=19200,
-        port="/dev/ttyUSB1",
-        timeout=0,
-        parity="N",
-        stopbits=1,
-        xonxoff=1,
-        rtscts=1)
+
+class LabelPrinter(serial.Serial):
+    def __init__(self, port):
+        super(LabelPrinter, self).__init__(
+                bytesize=8,
+                baudrate=19200,
+                port=port,
+                timeout=0,
+                parity="N",
+                stopbits=1,
+                xonxoff=1,
+                rtscts=1)
+        return
+
+    def print_label(self, label, count=1):
+        for line in label.build():
+            self.write(line)
+
+        if count > 1:
+            self.write(STX+"E"+str(count).zfill(4)+CR)
+            self.write(STX+"G"+CR)
+
+        self.close()
+        return
 
 
-qr = qrcode.QRCode(
-    version=1,
-    error_correction=qrcode.constants.ERROR_CORRECT_Q,
-    box_size=2,
-    border=0,
-)
+class Label:
+
+    thing_base_url = "https://dinge.openlab-augsburg.de/ding/"
+
+    def __init__(
+            self,
+            thing_id,
+            thing_name,
+            thing_maintainer,
+            thing_owner = "OpenLab",
+            thing_use_pol = "",
+            thing_discard_pol = ""):
+
+        if len(thing_id) > 12 or not thing_id.isdigit():
+            raise ValueError("Not a valid thing_id: field must contain max "
+                             "12 digits ranging from 0-9")
+        self.thing_id = thing_id.zfill(12)
+
+        if len(thing_name) > 18:
+            self.thing_name = thing_name[:15] + "..."
+        else:
+            self.thing_name = thing_name
+
+        if len(thing_owner) > 10: # FIXME determine correct length
+            raise ValueError("Not a valid thing_owner: field must contain "
+                             "less then 10 characters")
+        self.thing_owner = thing_owner
+
+        if len(thing_maintainer) > 10: # FIXME determine correct length
+            raise ValueError("Not a valid thing_maintainer: field must "
+                             "contain less then 10 characters")
+        self.thing_maintainer = thing_maintainer
+
+        if len(thing_use_pol) > 10: # FIXME determine correct length
+            raise ValueError("Not a valid thing_use_pol: field must contain "
+                             "less then 10 characters")
+        self.thing_use_pol = thing_use_pol
+
+        if len(thing_discard_pol) > 10: # FIXME determine correct length
+            raise ValueError("Not a valid thing_discard_pol: field must "
+                             "contain less then 10 characters")
+        self.thing_discard_pol = thing_discard_pol
+
+        return
 
 
+    def _gen_qrcode(self):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_Q,
+            box_size=2,
+            border=0)
 
-if __name__ == "__main__":
+        qr.add_data(urlparse.urljoin(self.thing_base_url,self.thing_id))
+        qr.make()
+        img = qr.make_image()
 
-    argparser = ArgumentParser(description="controls klauskleber")
-    argparser.add_argument("--id", help="12 digits thing ID", required=True)
-    argparser.add_argument("--name", help="thing name (18 chars max)", required=True)
-    argparser.add_argument("--own", help="thing owner",default="OpenLab", required=False)
-    argparser.add_argument("--mnt", help="thing maintainer", default="", required=False)
-    argparser.add_argument("--use", help="usecase", default="", required=False)
-    argparser.add_argument("--dis", help="discard", default="", required=False)
+        bmp = StringIO()
+        img.save(bmp, kind="BMP")
+        bmp.seek(0)
 
-    args = argparser.parse_args()
+        return bmp.read()
 
-    qr.add_data("https://dinge.openlab-augsburg.de/ding/"+args.id)
-    qr.make()
-    img = qr.make_image()
+    def build(self):
+        label = []
+        ### GENERAL SETTINGS reseted after turn off ###
+        label.append(STX+"m"+CR)     # use metric system
+        label.append(STX+"KX0025"+CR)   # 25mm label[0] height
+        label.append(STX+"f700"+CR)     # stop position for back feed
 
-    bmp = StringIO()
-    img.save(bmp, kind="BMP")
-    bmp.seek(0)
-
-
-    ### GENERAL SETTINGS (reseted after turn off) ###
-    kk.write(STX+"m"+CR)        # use metric system
-    kk.write(STX+"KX0025"+CR)   # 25mm label height
-    kk.write(STX+"f700"+CR)     # stop position for back feed
-
-    ### QR-Code transmitting ###
-    kk.write(STX+"IAbqrcode"+CR) # write bmp into ram as "qrcode"
-    kk.write(bmp.read())
+        ### QR-Code transmitting ###
+        label.append(STX+"IAbqrcode"+CR) # write bmp into ram as "qrcode"
+        label.append(self._gen_qrcode())
 
 
-    kk.write(STX+"L"+CR) # enter label formatting mode
+        label.append(STX+"L"+CR) # enter label[0] formatting mode
 
-    kk.write("1Y1100000070030qrcode"+CR) # qrcode
+        label.append("1Y1100000070030qrcode"+CR) # qrcode
 
-    kk.write("191100001800030Inventar - OpenLab Augsburg e. V."+CR) # header
+        label.append("191100001800030Inventar - OpenLab Augsburg e. V."+CR) # header
 
-    kk.write("121100001260225"+args.name+CR)        # Name
-    kk.write("111100000850225ID: "+args.id+CR)      # ID
+        label.append("121100001260225"+self.thing_name+CR)             # Name
+        label.append("111100000850225ID: "+self.thing_id+CR)           # ID
 
-    kk.write("111100000380225OWN: "+args.own+CR)    # Owner
-    kk.write("111100000030225MNT: "+args.mnt+CR)    # Maintainer
+        label.append("111100000380225OWN: "+self.thing_owner+CR)       # Owner
+        label.append("111100000030225MNT: "+self.thing_maintainer+CR)  # Maintainer
 
-    kk.write("111100000380625USE: "+args.use+CR)    # Usage
-    kk.write("111100000030625DIS: "+args.dis+CR)    # Discard
+        label.append("111100000380625USE: "+self.thing_use_pol+CR)     # Usage
+        label.append("111100000030625DIS: "+self.thing_discard_pol+CR) # Discard
 
-    kk.write("1F3108000950790"+args.id+CR)          # EAN
+        label.append("1F3108000950790"+self.thing_id+CR)               # EAN
 
-    kk.write("E"+CR) # end label formatting mode
+        label.append("E"+CR) # end label[0] formatting mode
 
-
-    kk.close()
+        return label
