@@ -115,7 +115,7 @@ class Label:
         ### GENERAL SETTINGS reseted after turn off ###
         label.append(STX+"m"+CR)     # use metric system
         label.append(STX+"KX0025"+CR)   # 25mm label[0] height
-        label.append(STX+"f700"+CR)     # stop position for back feed
+        label.append(STX+"f740"+CR)     # stop position for back feed
 
         ### QR-Code transmitting ###
         label.append(STX+"IAbqrcode"+CR) # write bmp into ram as "qrcode"
