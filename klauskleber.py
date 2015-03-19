@@ -70,24 +70,24 @@ class Label:
         else:
             self.thing_name = thing_name
 
-        if len(thing_owner) > 10: # FIXME determine correct length
+        if len(thing_owner) > 13:
             raise ValueError("Not a valid thing_owner: field must contain "
-                             "less then 10 characters")
+                             "less then 13 characters")
         self.thing_owner = thing_owner
 
-        if len(thing_maintainer) > 10: # FIXME determine correct length
+        if len(thing_maintainer) > 13:
             raise ValueError("Not a valid thing_maintainer: field must "
-                             "contain less then 10 characters")
+                             "contain less then 13 characters")
         self.thing_maintainer = thing_maintainer
 
-        if len(thing_use_pol) > 10: # FIXME determine correct length
+        if len(thing_use_pol) > 12:
             raise ValueError("Not a valid thing_use_pol: field must contain "
-                             "less then 10 characters")
+                             "less then 12 characters")
         self.thing_use_pol = thing_use_pol
 
-        if len(thing_discard_pol) > 10: # FIXME determine correct length
+        if len(thing_discard_pol) > 12:
             raise ValueError("Not a valid thing_discard_pol: field must "
-                             "contain less then 10 characters")
+                             "contain less then 12 characters")
         self.thing_discard_pol = thing_discard_pol
 
         return
@@ -134,8 +134,8 @@ class Label:
         label.append("111100000380225OWN: "+self.thing_owner+CR)       # Owner
         label.append("111100000030225MNT: "+self.thing_maintainer+CR)  # Maintainer
 
-        label.append("111100000380625USE: "+self.thing_use_pol+CR)     # Usage
-        label.append("111100000030625DIS: "+self.thing_discard_pol+CR) # Discard
+        label.append("111100000380670USE: "+self.thing_use_pol+CR)     # Usage
+        label.append("111100000030670DIS: "+self.thing_discard_pol+CR) # Discard
 
         label.append("1F3108000950790"+self.thing_id+CR)               # EAN
 
