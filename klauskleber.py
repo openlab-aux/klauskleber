@@ -137,7 +137,7 @@ class Label:
         label.append("111100000380670USE: "+self.thing_use_pol+CR)     # Usage
         label.append("111100000030670DIS: "+self.thing_discard_pol+CR) # Discard
 
-        label.append("1F3108000950790"+self.thing_id+CR)               # EAN
+        label.append("1d2108500920853"+self.thing_id+CR)               # EAN
 
         label.append("E"+CR) # end label[0] formatting mode
 
