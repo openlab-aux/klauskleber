@@ -60,10 +60,10 @@ class Label:
             thing_use_pol = "",
             thing_discard_pol = ""):
 
-        if len(thing_id) > 12 or not thing_id.isdigit():
+        if len(thing_id) > 10 or not thing_id.isdigit():
             raise ValueError("Not a valid thing_id: field must contain max "
-                             "12 digits ranging from 0-9")
-        self.thing_id = thing_id.zfill(12)
+                             "10 digits ranging from 0-9")
+        self.thing_id = thing_id.zfill(10)
 
         if len(thing_name) > 19:
             self.thing_name = thing_name[:16] + "..."
