@@ -65,8 +65,8 @@ class Label:
                              "12 digits ranging from 0-9")
         self.thing_id = thing_id.zfill(12)
 
-        if len(thing_name) > 18:
-            self.thing_name = thing_name[:15] + "..."
+        if len(thing_name) > 19:
+            self.thing_name = thing_name[:16] + "..."
         else:
             self.thing_name = thing_name
 
