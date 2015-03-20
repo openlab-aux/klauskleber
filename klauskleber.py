@@ -36,6 +36,9 @@ class LabelPrinter(serial.Serial):
         return
 
     def print_label(self, label, count=1):
+        if not self.isOpen():
+            self.open()
+
         for line in label.build():
             self.write(line)
 
