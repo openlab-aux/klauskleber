@@ -124,18 +124,18 @@ class Label:
 
         label.append(STX+"L"+CR) # enter label[0] formatting mode
 
-        label.append("1Y1100000070030qrcode"+CR) # qrcode
+        label.append("1Y1100000110030qrcode"+CR) # qrcode
 
-        label.append("191100001800030Inventar - OpenLab Augsburg e. V."+CR) # header
+        label.append("191100001830030Eingetragenes Inventar des OpenLab Augsburg e. V."+CR) # header
 
-        label.append("121100001260225"+self.thing_name+CR)             # Name
-        label.append("111100000850225ID: "+self.thing_id+CR)           # ID
+        label.append("121100001310225"+self.thing_name+CR)             # Name
+        label.append("111100000900225ID: "+self.thing_id+CR)           # ID
 
-        label.append("111100000380225OWN: "+self.thing_owner+CR)       # Owner
-        label.append("111100000030225MNT: "+self.thing_maintainer+CR)  # Maintainer
+        label.append("111100000420225OWN: "+self.thing_owner+CR)       # Owner
+        label.append("111100000070225MNT: "+self.thing_maintainer+CR)  # Maintainer
 
-        label.append("111100000380670USE: "+self.thing_use_pol+CR)     # Usage
-        label.append("111100000030670DIS: "+self.thing_discard_pol+CR) # Discard
+        label.append("111100000420670USE: "+self.thing_use_pol+CR)     # Usage
+        label.append("111100000070670DIS: "+self.thing_discard_pol+CR) # Discard
 
         label.append("1d2108500920853"+self.thing_id+CR)               # EAN
 
