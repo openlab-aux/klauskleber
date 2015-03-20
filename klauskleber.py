@@ -1,10 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import serial
 import qrcode
-from StringIO import StringIO
+from io import BytesIO
 import sys
-import urlparse
+from urllib.parse import urljoin
 
 #SOH = "\x0H"
 STX = "\x02"
@@ -25,7 +25,7 @@ ESC = "\x1B"
 class LabelPrinter(serial.Serial):
     def __init__(self, port):
         super(LabelPrinter, self).__init__(
-                bytesize=8,
+                #bytessize=8,
                 baudrate=19200,
                 port=port,
                 timeout=0,
@@ -50,6 +50,7 @@ class LabelPrinter(serial.Serial):
 class Label:
 
     thing_base_url = "https://dinge.openlab-augsburg.de/ding/"
+    labelbuf = []
 
     def __init__(
             self,
@@ -100,45 +101,49 @@ class Label:
             box_size=2,
             border=0)
 
-        qr.add_data(urlparse.urljoin(self.thing_base_url,self.thing_id))
+        qr.add_data(urljoin(self.thing_base_url,self.thing_id))
         qr.make()
         img = qr.make_image()
 
-        bmp = StringIO()
+        bmp = BytesIO()
         img.save(bmp, kind="BMP")
         bmp.seek(0)
 
         return bmp.read()
 
+    def _labelbuf_append_string(self, string):
+        self.labelbuf.append(bytes(string, "CP437"))
+
     def build(self):
-        label = []
+        self.labelbuf = []
         ### GENERAL SETTINGS reseted after turn off ###
-        label.append(STX+"m"+CR)     # use metric system
-        label.append(STX+"KX0025"+CR)   # 25mm label[0] height
-        label.append(STX+"f740"+CR)     # stop position for back feed
+        self._labelbuf_append_string(STX+"KI<5"+CR)     # german char set
+        self._labelbuf_append_string(STX+"m"+CR)        # use metric system
+        self._labelbuf_append_string(STX+"KX0025"+CR)   # 25mm label[0] height
+        self._labelbuf_append_string(STX+"f740"+CR)     # stop position for back feed
 
         ### QR-Code transmitting ###
-        label.append(STX+"IAbqrcode"+CR) # write bmp into ram as "qrcode"
-        label.append(self._gen_qrcode())
+        self._labelbuf_append_string(STX+"IAbqrcode"+CR) # write bmp into ram as "qrcode"
+        self.labelbuf.append(self._gen_qrcode())
 
 
-        label.append(STX+"L"+CR) # enter label[0] formatting mode
+        self._labelbuf_append_string(STX+"L"+CR) # enter label[0] formatting mode
 
-        label.append("1Y1100000110030qrcode"+CR) # qrcode
+        self._labelbuf_append_string("1Y1100000110030qrcode"+CR) # qrcode
 
-        label.append("191100001830030Eingetragenes Inventar des OpenLab Augsburg e. V."+CR) # header
+        self._labelbuf_append_string("191100001830030Eingetragenes Inventar des OpenLab Augsburg e. V."+CR) # header
 
-        label.append("121100001310225"+self.thing_name+CR)             # Name
-        label.append("111100000900225ID: "+self.thing_id+CR)           # ID
+        self._labelbuf_append_string("121100001310225"+self.thing_name+CR)             # Name
+        self._labelbuf_append_string("111100000900225ID: "+self.thing_id+CR)           # ID
 
-        label.append("111100000420225OWN: "+self.thing_owner+CR)       # Owner
-        label.append("111100000070225MNT: "+self.thing_maintainer+CR)  # Maintainer
+        self._labelbuf_append_string("111100000420225OWN: "+self.thing_owner+CR)       # Owner
+        self._labelbuf_append_string("111100000070225MNT: "+self.thing_maintainer+CR)  # Maintainer
 
-        label.append("111100000420670USE: "+self.thing_use_pol+CR)     # Usage
-        label.append("111100000070670DIS: "+self.thing_discard_pol+CR) # Discard
+        self._labelbuf_append_string("111100000420670USE: "+self.thing_use_pol+CR)     # Usage
+        self._labelbuf_append_string("111100000070670DIS: "+self.thing_discard_pol+CR) # Discard
 
-        label.append("1d2108500920853"+self.thing_id+CR)               # EAN
+        self._labelbuf_append_string("1d2108500920853"+self.thing_id+CR)               # EAN
 
-        label.append("E"+CR) # end label[0] formatting mode
+        self._labelbuf_append_string("E"+CR) # end label[0] formatting mode
 
-        return label
+        return self.labelbuf
