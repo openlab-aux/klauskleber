@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import serial
 import qrcode
 from io import BytesIO
 import sys
@@ -20,20 +19,23 @@ ESC = "\x1B"
 #  |||_ fixed
 #  |_ font
 
-
-
-class LabelPrinter(serial.Serial):
+class LabelPrinter():
     def __init__(self, port):
-        super(LabelPrinter, self).__init__(
-                #bytessize=8,
-                baudrate=19200,
-                port=port,
-                timeout=0,
-                parity="N",
-                stopbits=1,
-                xonxoff=1,
-                rtscts=1)
-        return
+        self.port = port
+        self._fd = None
+
+    def isOpen(self):
+        return not self._fd is None
+
+    def open(self):
+        self._fd = open(self.port, 'wb')
+
+    def close(self):
+        self._fd.close()
+        self._fd = None
+
+    def write(self, bytes):
+        self._fd.write(bytes)
 
     def print_label(self, label, count=1):
         if not self.isOpen():
